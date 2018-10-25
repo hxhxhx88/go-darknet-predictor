@@ -60,9 +60,6 @@ func (d *Detector) Detect(ps []uint8, c int, h int, w int, thres float32, hierTh
 	// c array to go
 	dets := (*[1 << 16]float32)(unsafe.Pointer(cDets))[:cLen:cLen]
 
-	// free mem we created before return, go gc won't do that for us
-	C.free(unsafe.Pointer(cDets))
-
 	// `dets` consists of several [label, prob, left, top, right, bottom]s
 	for i := 0; i < len(dets); i += 6 {
 		var det Detection
@@ -74,6 +71,9 @@ func (d *Detector) Detect(ps []uint8, c int, h int, w int, thres float32, hierTh
 		det.Bottom = uint(dets[i+5])
 		detections = append(detections, det)
 	}
+
+	// free mem we created before return, go gc won't do that for us
+	C.free(unsafe.Pointer(cDets))
 
 	return
 }
