@@ -3,7 +3,7 @@ package darknet
 // #include <stdlib.h>
 //
 // #cgo LDFLAGS: -ldarknet
-// void create_detector(char *cfgfile, char *weightfile, void **handle);
+// void create_detector(int xpu, char *cfgfile, char *weightfile, void **handle);
 // void forward_detector(void *handle, unsigned char *CHW, int c, int h, int w, float thresh, float hier_thresh, float nms, float **out, unsigned short *out_len);
 // void free_detector(void *handle);
 import "C"
@@ -26,16 +26,18 @@ type Detection struct {
 	Bottom      uint
 }
 
-// NewDetector creates a new Detector.
-func NewDetector(symbolPath string, paramPath string) (detector *Detector, err error) {
+// NewDetector creates a new Detector. `xpu` is the index of GPU, or -1 indicating CPU.
+func NewDetector(xpu int, symbolPath string, paramPath string) (detector *Detector, err error) {
 	detector = &Detector{}
 
-	_, err = C.create_detector(
+	// do not check the returned error.
+	// refer to https://github.com/hxhxhx88/go-mxnet-predictor/blob/master/mxnet/predictor.go#L86
+	C.create_detector(
+		C.int(xpu),
 		C.CString(symbolPath),
 		C.CString(paramPath),
 		&detector.handle,
 	)
-
 	return
 }
 
@@ -44,7 +46,9 @@ func (d *Detector) Detect(ps []uint8, c int, h int, w int, thres float32, hierTh
 	var cDets *C.float
 	var cLen C.ushort
 
-	_, err = C.forward_detector(
+	// do not check the returned error.
+	// refer to https://github.com/hxhxhx88/go-mxnet-predictor/blob/master/mxnet/predictor.go#L86
+	C.forward_detector(
 		d.handle,
 		(*C.uchar)(unsafe.Pointer(&ps[0])),
 		C.int(c),
@@ -80,6 +84,8 @@ func (d *Detector) Detect(ps []uint8, c int, h int, w int, thres float32, hierTh
 
 // Free ...
 func (d *Detector) Free() (err error) {
-	_, err = C.free_detector(d.handle)
+	// do not check the returned error.
+	// refer to https://github.com/hxhxhx88/go-mxnet-predictor/blob/master/mxnet/predictor.go#L86
+	C.free_detector(d.handle)
 	return
 }
