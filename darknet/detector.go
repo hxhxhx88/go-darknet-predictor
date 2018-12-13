@@ -3,11 +3,12 @@ package darknet
 // #include <stdlib.h>
 //
 // #cgo LDFLAGS: -ldarknet
-// void create_detector(int xpu, char *cfgfile, char *weightfile, void **handle);
+// int create_detector(int xpu, char *cfgfile, char *weightfile, void **handle);
 // void forward_detector(void *handle, unsigned char *CHW, int c, int h, int w, float thresh, float hier_thresh, float nms, float **out, unsigned short *out_len);
 // void free_detector(void *handle);
 import "C"
 import (
+	"fmt"
 	"unsafe"
 )
 
@@ -32,12 +33,18 @@ func NewDetector(xpu int, symbolPath string, paramPath string) (detector *Detect
 
 	// do not check the returned error.
 	// refer to https://github.com/hxhxhx88/go-mxnet-predictor/blob/master/mxnet/predictor.go#L86
-	C.create_detector(
+	success := C.create_detector(
 		C.int(xpu),
 		C.CString(symbolPath),
 		C.CString(paramPath),
 		&detector.handle,
 	)
+
+	if success != 1 {
+		err = fmt.Errorf("failed to create a new detector")
+		return
+	}
+
 	return
 }
 
